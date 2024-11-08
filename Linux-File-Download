@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Prompt user for required inputs
+read -p "Enter the remote server username: " REMOTE_USER
+read -p "Enter the remote server IP address: " REMOTE_HOST
+read -p "Enter the path of the file on the remote server (e.g., /etc/shadow): " REMOTE_ROOT_FILE
+read -s -p "Enter the password for sudo access on the remote server: " ROOT_PASSWORD
+echo
+read -p "Enter the destination directory on the local machine (e.g., ~/letsdefend): " LOCAL_DESTINATION
+
+# Derived variables
+TEMP_FILE="/home/$REMOTE_USER/temp_copy_$(basename $REMOTE_ROOT_FILE)"
+
+# Use expect to handle interactive commands and check each step
+expect <<EOF
+  # Step 1: SSH into the remote server, switch to root, copy the file, and adjust permissions
+  log_user 0
+  spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t $REMOTE_USER@$REMOTE_HOST
+  expect "password:"
+  send "$ROOT_PASSWORD\r"
+  expect "$ "
+  send "sudo su -c 'cp $REMOTE_ROOT_FILE $TEMP_FILE && chmod 644 $TEMP_FILE' > /dev/null 2>&1\r"
+  expect "# "
+  send "exit\r"
+
+  # Step 2: SCP the file from the remote server to the local machine
+  log_user 1
+  spawn scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $REMOTE_USER@$REMOTE_HOST:$TEMP_FILE $LOCAL_DESTINATION
+  expect "password:"
+  send "$ROOT_PASSWORD\r"
+  expect eof
+EOF
+
+# Check if the file was successfully downloaded
+if [ ! -f "$LOCAL_DESTINATION/$(basename $TEMP_FILE)" ]; then
+    echo "Error: File transfer failed. Please check the connection and file path."
+    exit 1
+fi
+
+# Step 3: Clean up the temporary file on the remote server
+expect <<EOF
+  log_user 0
+  spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t $REMOTE_USER@$REMOTE_HOST
+  expect "password:"
+  send "$ROOT_PASSWORD\r"
+  expect "$ "
+  send "sudo su -c 'rm $TEMP_FILE' > /dev/null 2>&1\r"
+  expect "# "
+  send "exit\r"
+EOF
+
+# Final message confirming success
+echo "File has been successfully transferred to $LOCAL_DESTINATION and cleaned up on the remote server."
