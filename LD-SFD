@@ -11,7 +11,7 @@ if [[ "$MACHINE_TYPE" == "w" || "$MACHINE_TYPE" == "W" ]]; then
     read -p "Enter the local destination directory for the drive (e.g., /home/kali/letsdefend): " LOCAL_DESTINATION
 
     # Start RDP session using xfreerdp
-    xfreerdp /v:"$REMOTE_HOST" /u:"$REMOTE_USER" /p:"$RDP_PASSWORD" /drive:"$DRIVE_NAME","$LOCAL_DESTINATION" +clipboard
+    xfreerdp /v:"$REMOTE_HOST" /u:"$REMOTE_USER" /p:"$RDP_PASSWORD" /drive:"$DRIVE_NAME","$LOCAL_DESTINATION" +clipboard /cert:ignore
     exit 0
 fi
 
