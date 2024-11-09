@@ -1,71 +1,87 @@
-## Script: Remote File Transfer and Cleanup
+Here's a `README.md` file for your script.
 
-### Overview
-This script automates the secure transfer of a file from a remote server to a local machine using SSH and SCP with `expect`. It also performs file cleanup on the remote server after confirming a successful download. The script prompts the user for necessary input details and minimizes output for a cleaner terminal experience.
+# Remote File Transfer and RDP Script
 
-### Features
-- Transfers a file from a specified path on a remote server to a local directory.
-- Handles `sudo` permissions for files located in restricted directories on the remote server.
-- Automatically cleans up the temporary file on the remote server post-transfer.
-- Provides a final success message if the file transfer is successful.
+This script allows for secure file transfer from a remote Linux server or establishes an RDP (Remote Desktop Protocol) session to a Windows server. Depending on the type of remote server specified, it either performs an RDP session with mapped drive functionality or transfers specified files from a Linux server to a local machine.
 
-### Requirements
-- **Bash**
-- **Expect**: This script uses `expect` for handling password prompts interactively.
+## Requirements
 
-### Usage
+- **Linux Environment**: This script is designed to be run from a Linux-based environment.
+- **Expect Package**: The script uses the `expect` utility for automating SSH and SCP interactions.
+- **xfreerdp**: For connecting to Windows machines via RDP.
 
-1. Make the script executable:
-   ```bash
-   chmod +x your_script_name.sh
-   ```
-
-2. Run the script:
-   ```bash
-   ./your_script_name.sh
-   ```
-
-3. Follow the prompts to enter:
-   - **Remote server username**
-   - **Remote server IP address**
-   - **Path of the file on the remote server** (e.g., `/etc/shadow`)
-   - **Password for sudo access** on the remote server
-   - **Local destination directory** where the file should be saved
-
-### Prompts
-- **Remote server username**: The username with SSH access to the remote server.
-- **Remote server IP address**: The IP of the remote server.
-- **Path of the file on the remote server**: The full path to the file that needs to be transferred (e.g., `/root/Desktop/ChallengeFile/Pcap_Analysis.pcapng`).
-- **Password for sudo access**: Password for `sudo` access if the file is in a restricted directory.
-- **Destination directory on the local machine**: The local path where the file will be saved.
-
-### Script Breakdown
-
-1. **File Transfer Preparation**:
-   - The script creates a temporary copy of the specified file on the remote server in a location accessible by the SSH user.
-2. **File Transfer to Local**:
-   - The script transfers the temporary file to the specified local destination.
-   - If successful, it proceeds to clean up; otherwise, it exits with an error message.
-3. **Remote Cleanup**:
-   - The script removes the temporary file from the remote server.
-
-### Example
-
-```plaintext
-Enter the remote server username: analyst
-Enter the remote server IP address: 18.222.171.163
-Enter the path of the file on the remote server (e.g., /etc/shadow): /root/Desktop/ChallengeFile/Pcap_Analysis.pcapng
-Enter the password for sudo access on the remote server:
-Enter the destination directory on the local machine (e.g., ~/letsdefend): /home/kali/letsdefend/
-File has been successfully transferred to /home/kali/letsdefend and cleaned up on the remote server.
+To install `expect` and `xfreerdp`:
+```bash
+sudo apt-get update
+sudo apt-get install expect xfreerdp
 ```
 
-### Error Handling
-- If the file transfer fails, an error message will indicate the issue, advising to check connectivity and paths.
+## Usage
 
-### Notes
-- Ensure `expect` is installed on your system to enable the script to handle password prompts.
+### Step 1: Run the Script
+Run the script in a terminal:
+```bash
+./script.sh
+```
 
-### Security Notice
-- Avoid storing passwords in plain text within scripts.
-- Use appropriate access controls and delete temporary files after use.
+### Step 2: Specify the Remote Machine Type
+The script prompts whether the remote machine is Windows or Linux:
+- **Windows**: Initiates an RDP session to the Windows server with a mapped drive.
+- **Linux**: Transfers specified files from the remote Linux server.
+
+### Windows Workflow
+
+1. **Enter Remote Server Details**:
+   - IP address
+   - Username
+   - Password (RDP password for the Windows account)
+   - Drive name (e.g., `C:`, `D:`, etc., to map locally)
+   - Local directory to map as a drive on the remote server
+   
+2. **RDP Session**: The script establishes an RDP session using `xfreerdp`, mapping the specified local directory as a drive on the remote Windows server.
+
+**Example**:
+```plaintext
+Enter the remote server IP address: 192.168.1.10
+Enter the remote server username: AdminUser
+Enter the RDP password:
+Enter the drive name (e.g., 'C:', 'D:'): D:
+Enter the local destination directory for the drive (e.g., /home/user/share): /home/kali/letsdefend
+```
+
+### Linux Workflow
+
+1. **Enter Remote Server Details**:
+   - Username
+   - IP address
+   - Paths of files on the remote server (multiple paths can be specified separated by spaces)
+   - Sudo password for root access on the remote server
+   - Destination directory on the local machine
+
+2. **File Transfer**:
+   - The script logs in to the Linux server, copies specified files to a temporary location, and sets permissions.
+   - Files are transferred to the local destination using SCP, then deleted from the temporary location on the remote server.
+
+**Example**:
+```plaintext
+Enter the remote server username: user123
+Enter the remote server IP address: 192.168.1.20
+Enter the paths of the files on the remote server, separated by spaces: /etc/passwd /etc/hosts
+Enter the password for sudo access on the remote server:
+Enter the destination directory on the local machine (e.g., /home/kali/letsdefend): /home/kali/letsdefend
+```
+
+## Output
+
+- **Windows**: Opens an RDP session.
+- **Linux**: Copies files to the specified local directory, outputting the success or failure of each transfer.
+
+## Important Notes
+
+- Ensure you have sufficient permissions on both the remote and local machines.
+- The script uses SSH and SCP for secure file transfers.
+- Only use this script in trusted environments due to the handling of passwords in the script.
+
+## License
+
+This script is open-source and available under the MIT License.
