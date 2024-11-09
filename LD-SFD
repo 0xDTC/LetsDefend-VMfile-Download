@@ -7,7 +7,7 @@ if [[ "$MACHINE_TYPE" == "w" || "$MACHINE_TYPE" == "W" ]]; then
     read -p "Enter the remote server username: " REMOTE_USER
     read -s -p "Enter the RDP password: " RDP_PASSWORD
     echo
-    read -p "Enter the drive name (e.g., 'C:\,D:\,E:\'): " DRIVE_NAME
+    read -p "Enter the drive name (e.g., "C:\,D:\,E:\"): " DRIVE_NAME
     read -p "Enter the local destination directory for the drive (e.g., /home/kali/letsdefend): " LOCAL_DESTINATION
 
     # Start RDP session using xfreerdp
