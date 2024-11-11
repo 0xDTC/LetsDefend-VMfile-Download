@@ -5,7 +5,7 @@ read -p "Is the remote machine Windows or Linux? (w/l): " MACHINE_TYPE
 if [[ "$MACHINE_TYPE" == "w" || "$MACHINE_TYPE" == "W" ]]; then
     read -p "Enter the remote server IP address: " REMOTE_HOST
     read -p "Enter the remote server username (default: analyst): " REMOTE_USER
-    REMOTE_USER=${REMOTE_USER:-analyst}  # Default to 'analyst' if no input
+    REMOTE_USER=${REMOTE_USER:-analyst}
     read -s -p "Enter the RDP password: " RDP_PASSWORD
     echo
     read -p "Enter the drive letter to map (e.g., 'C' for drive C): " DRIVE_NAME
@@ -18,11 +18,12 @@ fi
 
 # If Linux, continue with SSH and SCP file transfer process
 read -p "Enter the remote server username (default: analyst): " REMOTE_USER
-REMOTE_USER=${REMOTE_USER:-analyst}  # Default to 'analyst' if no input
+REMOTE_USER=${REMOTE_USER:-analyst}
 read -p "Enter the remote server IP address: " REMOTE_HOST
-echo "Enter the paths of the files or directories on the remote server, separated by spaces:"; read -a REMOTE_FILES  # Read multiple file paths into an array
+echo "Enter the paths of the files or directories on the remote server, separated by spaces:"
+read -a REMOTE_FILES  # Read multiple file paths into an array
 read -s -p "Enter the password for sudo access on the remote server (default: 123): " ROOT_PASSWORD
-ROOT_PASSWORD=${ROOT_PASSWORD:-123}  # Default to '123' if no input
+ROOT_PASSWORD=${ROOT_PASSWORD:-123}
 echo
 read -p "Enter the destination directory on the local machine (e.g., /home/kali/letsdefend): " LOCAL_DESTINATION
 
@@ -32,23 +33,24 @@ mkdir -p "$LOCAL_DESTINATION"
 # Function to handle single file or directory transfer
 transfer_file_or_directory() {
     local REMOTE_PATH=$1
+    local TEMP_PATH="/home/$REMOTE_USER/$(basename "$REMOTE_PATH")"
     local DEST_PATH="$LOCAL_DESTINATION/$(basename "$REMOTE_PATH")"
 
-    # Use expect to handle SSH and SCP interactions
+    # Use expect to handle SSH and SCP interactions with sudo
     expect <<EOF
-      # Step 1: SSH into the remote server, switch to root, prepare for recursive copy
+      # Step 1: SSH into the remote server, copy to accessible location
       log_user 0
-      spawn ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t $REMOTE_USER@$REMOTE_HOST
+      spawn ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t $REMOTE_USER@$REMOTE_HOST
       expect "password:"
       send "$ROOT_PASSWORD\r"
       expect "$ "
-      send "sudo su -c 'chmod -R 644 $REMOTE_PATH' > /dev/null 2>&1\r"
+      send "sudo su -c 'cp -r $REMOTE_PATH $TEMP_PATH && chmod -R 755 $TEMP_PATH' > /dev/null 2>&1\r"
       expect "# "
       send "exit\r"
 
-      # Step 2: SCP the directory or file from the remote server to the local machine
+      # Step 2: SCP the directory or file from the temporary accessible location to the local machine
       log_user 1
-      spawn scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH $DEST_PATH
+      spawn scp -rq -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $REMOTE_USER@$REMOTE_HOST:$TEMP_PATH $DEST_PATH
       expect "password:"
       send "$ROOT_PASSWORD\r"
       expect eof
@@ -60,6 +62,18 @@ EOF
     else
         echo "Successfully downloaded $REMOTE_PATH to $LOCAL_DESTINATION."
     fi
+
+    # Clean up the temporary file on the remote server
+    expect <<EOF
+      log_user 0
+      spawn ssh -q -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -t $REMOTE_USER@$REMOTE_HOST
+      expect "password:"
+      send "$ROOT_PASSWORD\r"
+      expect "$ "
+      send "sudo su -c 'rm -rf $TEMP_PATH' > /dev/null 2>&1\r"
+      expect "# "
+      send "exit\r"
+EOF
 }
 
 # Process each path by calling transfer_file_or_directory function
