@@ -1,3 +1,4 @@
+<a href="https://www.buymeacoffee.com/0xDTC"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a knowledge&emoji=📖&slug=0xDTC&button_colour=FF5F5F&font_colour=ffffff&font_family=Comic&outline_colour=000000&coffee_colour=FFDD00" /></a>
 # Remote File Transfer and RDP Session Script
 
 This script facilitates secure file transfers from a remote Linux server to a local machine and supports RDP (Remote Desktop Protocol) sessions to Windows servers with drive mapping. Based on the selected server type, the script initiates an RDP session (for Windows) or recursively downloads specified files and directories (for Linux).
